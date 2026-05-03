@@ -5,14 +5,7 @@ import { projectAPI, taskAPI } from "../api/api";
 import StatsCard from "../components/StatsCard";
 import TaskCard from "../components/TaskCard";
 import { toast } from "react-toastify";
-import {
-  FolderKanban,
-  ListTodo,
-  CheckCircle2,
-  Clock,
-  ArrowRight,
-  Sparkles,
-} from "lucide-react";
+import { FolderKanban, ListTodo, CheckCircle2, Clock, ArrowRight } from "lucide-react";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -30,7 +23,7 @@ const Dashboard = () => {
         setProjects(projRes.projects || []);
         setTasks(taskRes.tasks || []);
       } catch {
-        // silently fail, show empty state
+        /* empty state handles it */
       } finally {
         setLoading(false);
       }
@@ -41,120 +34,84 @@ const Dashboard = () => {
   const handleStatusChange = async (taskId, status) => {
     try {
       await taskAPI.updateStatus(taskId, status);
-      setTasks((prev) =>
-        prev.map((t) => (t._id === taskId ? { ...t, status } : t))
-      );
-      toast.success("Status updated!");
+      setTasks((prev) => prev.map((t) => (t._id === taskId ? { ...t, status } : t)));
+      toast.success("Task updated");
     } catch (err) {
-      toast.error(err.message || "Failed to update status");
+      toast.error(err.message || "Could not update task");
     }
   };
 
   const completedTasks = tasks.filter((t) => t.status === "Completed").length;
   const pendingTasks = tasks.filter((t) => t.status === "Pending").length;
 
-  if (loading) {
-    return (
-      <div className="loading-screen">
-        <span className="animate-spin w-10 h-10 border-3 border-purple-500/30 border-t-purple-500 rounded-full" />
-      </div>
-    );
-  }
+  if (loading) return <div className="loading-screen"><span className="spinner" /></div>;
 
   return (
     <div className="page-container fade-in">
-      {/* Welcome Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles size={20} className="text-cyan-400" />
-          <span className="text-sm text-cyan-400 font-medium">Dashboard</span>
-        </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-white">
-          Welcome back,{" "}
-          <span className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-            {user?.username || "User"}
-          </span>
+      {/* Header */}
+      <div style={{ marginBottom: 32 }}>
+        <p className="section-label">Overview</p>
+        <h1 className="page-title">
+          Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}, {user?.username || "there"}
         </h1>
-        <p className="text-gray-400 mt-1">
-          Here's what's happening with your projects today.
-        </p>
+        <p className="page-subtitle">Here's what's happening across your projects.</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatsCard
-          icon={FolderKanban}
-          label="Total Projects"
-          value={projects.length}
-          color="purple"
-        />
-        <StatsCard
-          icon={ListTodo}
-          label="My Tasks"
-          value={tasks.length}
-          color="cyan"
-        />
-        <StatsCard
-          icon={CheckCircle2}
-          label="Completed"
-          value={completedTasks}
-          color="green"
-        />
-        <StatsCard
-          icon={Clock}
-          label="Pending"
-          value={pendingTasks}
-          color="orange"
-        />
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 32 }}>
+        <StatsCard icon={FolderKanban} label="Total projects" value={projects.length} color="accent" />
+        <StatsCard icon={ListTodo} label="Assigned tasks" value={tasks.length} color="info" />
+        <StatsCard icon={CheckCircle2} label="Completed" value={completedTasks} color="success" />
+        <StatsCard icon={Clock} label="Pending" value={pendingTasks} color="warning" />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }} className="dashboard-grid">
         {/* Recent Projects */}
-        <div className="glass-card p-5 rounded-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-              <FolderKanban size={18} className="text-purple-400" />
-              Recent Projects
+        <div className="card" style={{ overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--border-primary)" }}>
+            <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+              <FolderKanban size={16} style={{ color: "var(--accent)" }} /> Recent projects
             </h2>
-            <Link
-              to="/projects"
-              className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 transition-colors"
-            >
-              View all <ArrowRight size={14} />
+            <Link to="/projects" style={{ fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: 4, fontWeight: 500 }}>
+              View all <ArrowRight size={13} />
             </Link>
           </div>
 
           {projects.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FolderKanban size={40} className="mx-auto mb-3 opacity-30" />
-              <p>No projects yet. Create your first!</p>
-              <Link to="/projects" className="glass-button inline-block mt-3 text-sm">
-                Create Project
-              </Link>
+            <div className="empty-state" style={{ padding: 32 }}>
+              <FolderKanban size={36} className="empty-state-icon" style={{ margin: "0 auto 12px" }} />
+              <p className="empty-state-title">No projects yet</p>
+              <p className="empty-state-text">Create your first project to get started.</p>
+              <Link to="/projects" className="btn btn-primary btn-sm">Create project</Link>
             </div>
           ) : (
-            <div className="space-y-3">
-              {projects.slice(0, 4).map((proj) => (
+            <div style={{ padding: 8 }}>
+              {projects.slice(0, 5).map((proj) => (
                 <Link
                   key={proj._id}
                   to={`/projects/${proj._id}`}
-                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors group"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    textDecoration: "none",
+                    color: "inherit",
+                    transition: "background-color 0.15s",
+                  }}
+                  className="project-row"
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                 >
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-cyan-500/20 border border-white/10 flex items-center justify-center text-purple-400 font-bold text-sm">
+                  <div className="avatar avatar-md" style={{ backgroundColor: "var(--accent-subtle)", color: "var(--accent)", fontWeight: 700, fontSize: "0.75rem" }}>
                     {proj.name.charAt(0).toUpperCase()}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate group-hover:text-purple-300 transition-colors">
-                      {proj.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {proj.members?.length || 0} members
-                    </p>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--text-primary)" }} className="line-clamp-1">{proj.name}</p>
+                    <p style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>{proj.members?.length || 0} members</p>
                   </div>
-                  <ArrowRight
-                    size={14}
-                    className="text-gray-600 group-hover:text-purple-400 transition-colors"
-                  />
+                  <ArrowRight size={14} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
                 </Link>
               ))}
             </div>
@@ -162,39 +119,37 @@ const Dashboard = () => {
         </div>
 
         {/* My Tasks */}
-        <div className="glass-card p-5 rounded-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-              <ListTodo size={18} className="text-cyan-400" />
-              My Tasks
+        <div className="card" style={{ overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--border-primary)" }}>
+            <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+              <ListTodo size={16} style={{ color: "var(--info)" }} /> Your tasks
             </h2>
-            <Link
-              to="/my-tasks"
-              className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
-            >
-              View all <ArrowRight size={14} />
+            <Link to="/my-tasks" style={{ fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: 4, fontWeight: 500 }}>
+              View all <ArrowRight size={13} />
             </Link>
           </div>
 
           {tasks.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <ListTodo size={40} className="mx-auto mb-3 opacity-30" />
-              <p>No tasks assigned to you yet.</p>
+            <div className="empty-state" style={{ padding: 32 }}>
+              <ListTodo size={36} className="empty-state-icon" style={{ margin: "0 auto 12px" }} />
+              <p className="empty-state-title">No tasks yet</p>
+              <p className="empty-state-text">Tasks assigned to you will appear here.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 12 }}>
               {tasks.slice(0, 4).map((task) => (
-                <TaskCard
-                  key={task._id}
-                  task={task}
-                  onStatusChange={handleStatusChange}
-                  showProject
-                />
+                <TaskCard key={task._id} task={task} onStatusChange={handleStatusChange} showProject />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .dashboard-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 };

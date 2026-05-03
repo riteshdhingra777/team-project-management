@@ -4,7 +4,7 @@ import { useAuth } from "../store/auth";
 import ProjectCard from "../components/ProjectCard";
 import Modal from "../components/Modal";
 import { toast } from "react-toastify";
-import { Plus, FolderKanban, Search, Sparkles } from "lucide-react";
+import { Plus, FolderKanban, Search } from "lucide-react";
 
 const Projects = () => {
   const { user } = useAuth();
@@ -20,15 +20,13 @@ const Projects = () => {
       const data = await projectAPI.getAll();
       setProjects(data.projects || []);
     } catch {
-      toast.error("Failed to load projects");
+      toast.error("Could not load projects");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
+  useEffect(() => { fetchProjects(); }, []);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -36,25 +34,25 @@ const Projects = () => {
     setCreating(true);
     try {
       await projectAPI.create(form);
-      toast.success("Project created! 🎉");
+      toast.success("Project created");
       setForm({ name: "", description: "" });
       setShowModal(false);
       fetchProjects();
     } catch (err) {
-      toast.error(err.message || "Failed to create project");
+      toast.error(err.message || "Could not create project");
     } finally {
       setCreating(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this project? All tasks will also be removed.")) return;
+    if (!window.confirm("Delete this project and all its tasks?")) return;
     try {
       await projectAPI.remove(id);
       toast.success("Project deleted");
       setProjects((p) => p.filter((proj) => proj._id !== id));
     } catch (err) {
-      toast.error(err.message || "Failed to delete project");
+      toast.error(err.message || "Could not delete project");
     }
   };
 
@@ -62,115 +60,69 @@ const Projects = () => {
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loading) {
-    return (
-      <div className="loading-screen">
-        <span className="animate-spin w-10 h-10 border-3 border-purple-500/30 border-t-purple-500 rounded-full" />
-      </div>
-    );
-  }
+  if (loading) return <div className="loading-screen"><span className="spinner" /></div>;
 
   return (
     <div className="page-container fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 24 }}>
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles size={20} className="text-purple-400" />
-            <span className="text-sm text-purple-400 font-medium">Projects</span>
-          </div>
-          <h1 className="text-3xl font-bold text-white">Your Projects</h1>
-          <p className="text-gray-400 mt-1">Manage and organize your team projects</p>
+          <p className="section-label">Workspace</p>
+          <h1 className="page-title">Projects</h1>
+          <p className="page-subtitle">Manage and organize your team projects</p>
         </div>
-        <button
-          id="create-project-btn"
-          onClick={() => setShowModal(true)}
-          className="glass-button flex items-center gap-2 self-start"
-        >
-          <Plus size={18} /> New Project
+        <button id="create-project-btn" onClick={() => setShowModal(true)} className="btn btn-primary">
+          <Plus size={16} /> New project
         </button>
       </div>
 
-      {/* Search */}
       {projects.length > 0 && (
-        <div className="relative mb-6 max-w-md">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+        <div style={{ position: "relative", maxWidth: 360, marginBottom: 24 }}>
+          <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
           <input
             id="project-search"
             type="text"
-            placeholder="Search projects..."
+            placeholder="Search projects…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="glass-input pl-10"
+            className="form-input"
+            style={{ paddingLeft: 36 }}
           />
         </div>
       )}
 
-      {/* Projects Grid */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <FolderKanban size={60} className="mx-auto mb-4 text-gray-700" />
-          <h2 className="text-xl font-semibold text-gray-400 mb-2">
-            {search ? "No projects found" : "No projects yet"}
-          </h2>
-          <p className="text-gray-500 mb-6">
-            {search ? "Try a different search term" : "Create your first project to get started!"}
-          </p>
+        <div className="empty-state">
+          <FolderKanban size={48} className="empty-state-icon" style={{ margin: "0 auto 12px" }} />
+          <p className="empty-state-title">{search ? "No matching projects" : "No projects yet"}</p>
+          <p className="empty-state-text">{search ? "Try a different search term." : "Create your first project to start collaborating."}</p>
           {!search && (
-            <button onClick={() => setShowModal(true)} className="glass-button inline-flex items-center gap-2">
-              <Plus size={18} /> Create Project
+            <button onClick={() => setShowModal(true)} className="btn btn-primary btn-sm">
+              <Plus size={14} /> Create project
             </button>
           )}
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
           {filtered.map((proj) => (
-            <ProjectCard
-              key={proj._id}
-              project={proj}
-              onDelete={handleDelete}
-              currentUserId={user?._id}
-            />
+            <ProjectCard key={proj._id} project={proj} onDelete={handleDelete} currentUserId={user?._id} />
           ))}
         </div>
       )}
 
-      {/* Create Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Create New Project">
-        <form onSubmit={handleCreate} className="space-y-4" id="create-project-form">
-          <div className="space-y-1.5">
-            <label className="text-sm text-gray-300 font-medium">Project Name</label>
-            <input
-              id="project-name-input"
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="My Awesome Project"
-              className="glass-input"
-              required
-            />
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="New project">
+        <form onSubmit={handleCreate} id="create-project-form" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="form-group">
+            <label className="form-label" htmlFor="project-name-input">Name</label>
+            <input id="project-name-input" type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Marketing Website" className="form-input" required />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm text-gray-300 font-medium">Description</label>
-            <textarea
-              id="project-desc-input"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="What's this project about?"
-              className="glass-input min-h-[100px] resize-none"
-              rows={3}
-            />
+          <div className="form-group">
+            <label className="form-label" htmlFor="project-desc-input">Description</label>
+            <textarea id="project-desc-input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Brief description of the project" className="form-textarea" rows={3} />
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => setShowModal(false)} className="glass-button-secondary flex-1">
-              Cancel
-            </button>
-            <button id="submit-project-btn" type="submit" disabled={creating} className="glass-button flex-1 flex items-center justify-center gap-2">
-              {creating ? (
-                <span className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
-              ) : (
-                <><Plus size={16} /> Create</>
-              )}
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
+            <button id="submit-project-btn" type="submit" disabled={creating} className="btn btn-primary" style={{ flex: 1 }}>
+              {creating ? <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> : "Create project"}
             </button>
           </div>
         </form>

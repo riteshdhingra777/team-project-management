@@ -5,10 +5,7 @@ import { useAuth } from "../store/auth";
 import TaskCard from "../components/TaskCard";
 import Modal from "../components/Modal";
 import { toast } from "react-toastify";
-import {
-  ArrowLeft, Plus, UserPlus, Users, Trash2,
-  FolderKanban, ListTodo, Sparkles, Shield, Calendar,
-} from "lucide-react";
+import { ArrowLeft, Plus, UserPlus, Users, Trash2, ListTodo, Shield, Calendar } from "lucide-react";
 import { format } from "date-fns";
 
 const ProjectDetail = () => {
@@ -36,7 +33,7 @@ const ProjectDetail = () => {
       setProject(projRes.project);
       setTasks(taskRes.tasks || []);
     } catch {
-      toast.error("Failed to load project");
+      toast.error("Could not load project");
     } finally {
       setLoading(false);
     }
@@ -49,20 +46,19 @@ const ProjectDetail = () => {
     if (!taskForm.title.trim()) return toast.warn("Task title is required");
     setCreating(true);
     try {
-      const body = {
+      await taskAPI.create({
         title: taskForm.title,
         description: taskForm.description,
         project: id,
         ...(taskForm.assignedTo && { assignedTo: taskForm.assignedTo }),
         ...(taskForm.dueDate && { dueDate: taskForm.dueDate }),
-      };
-      await taskAPI.create(body);
-      toast.success("Task created!");
+      });
+      toast.success("Task created");
       setTaskForm({ title: "", description: "", assignedTo: "", dueDate: "" });
       setShowTaskModal(false);
       fetchData();
     } catch (err) {
-      toast.error(err.message || "Failed to create task");
+      toast.error(err.message || "Could not create task");
     } finally {
       setCreating(false);
     }
@@ -74,25 +70,25 @@ const ProjectDetail = () => {
     setCreating(true);
     try {
       await projectAPI.addMember(id, memberForm);
-      toast.success("Member added!");
+      toast.success("Member added");
       setMemberForm({ email: "", role: "Member" });
       setShowMemberModal(false);
       fetchData();
     } catch (err) {
-      toast.error(err.message || "Failed to add member");
+      toast.error(err.message || "Could not add member");
     } finally {
       setCreating(false);
     }
   };
 
   const handleRemoveMember = async (userId) => {
-    if (!window.confirm("Remove this member?")) return;
+    if (!window.confirm("Remove this member from the project?")) return;
     try {
       await projectAPI.removeMember(id, userId);
       toast.success("Member removed");
       fetchData();
     } catch (err) {
-      toast.error(err.message || "Failed to remove member");
+      toast.error(err.message || "Could not remove member");
     }
   };
 
@@ -100,9 +96,9 @@ const ProjectDetail = () => {
     try {
       await taskAPI.updateStatus(taskId, status);
       setTasks((prev) => prev.map((t) => (t._id === taskId ? { ...t, status } : t)));
-      toast.success("Status updated!");
+      toast.success("Task updated");
     } catch (err) {
-      toast.error(err.message || "Failed to update");
+      toast.error(err.message || "Could not update task");
     }
   };
 
@@ -113,88 +109,87 @@ const ProjectDetail = () => {
       toast.success("Task deleted");
       setTasks((prev) => prev.filter((t) => t._id !== taskId));
     } catch (err) {
-      toast.error(err.message || "Failed to delete");
+      toast.error(err.message || "Could not delete task");
     }
   };
 
-  if (loading) {
-    return (
-      <div className="loading-screen">
-        <span className="animate-spin w-10 h-10 border-3 border-purple-500/30 border-t-purple-500 rounded-full" />
-      </div>
-    );
-  }
+  if (loading) return <div className="loading-screen"><span className="spinner" /></div>;
 
   if (!project) {
     return (
-      <div className="page-container text-center py-20">
-        <h2 className="text-xl text-gray-400">Project not found</h2>
-        <Link to="/projects" className="glass-button inline-block mt-4">Back to Projects</Link>
+      <div className="page-container" style={{ textAlign: "center", paddingTop: 80 }}>
+        <p className="empty-state-title">Project not found</p>
+        <Link to="/projects" className="btn btn-primary btn-sm" style={{ marginTop: 16 }}>Back to projects</Link>
       </div>
     );
   }
 
+  const colors = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ec4899"];
+
   return (
     <div className="page-container fade-in">
-      {/* Back + Header */}
-      <Link to="/projects" className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-6 transition-colors">
-        <ArrowLeft size={16} /> Back to Projects
+      <Link to="/projects" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.8125rem", color: "var(--text-tertiary)", marginBottom: 24, textDecoration: "none" }}
+        onMouseEnter={(e) => e.currentTarget.style.color = "var(--text-primary)"}
+        onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-tertiary)"}
+      >
+        <ArrowLeft size={14} /> Back to projects
       </Link>
 
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
+      {/* Header */}
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 32 }}>
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles size={20} className="text-purple-400" />
-            <span className="text-sm text-purple-400 font-medium">Project</span>
-            {isAdmin && (
-              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">Admin</span>
-            )}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <p className="section-label" style={{ marginBottom: 0 }}>Project</p>
+            {isAdmin && <span className="badge badge-accent">Admin</span>}
           </div>
-          <h1 className="text-3xl font-bold text-white">{project.name}</h1>
-          {project.description && <p className="text-gray-400 mt-1">{project.description}</p>}
+          <h1 className="page-title">{project.name}</h1>
+          {project.description && <p className="page-subtitle">{project.description}</p>}
           {project.createdAt && (
-            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+            <p style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
               <Calendar size={12} /> Created {format(new Date(project.createdAt), "MMM dd, yyyy")}
             </p>
           )}
         </div>
         {isAdmin && (
-          <div className="flex gap-2 self-start">
-            <button onClick={() => setShowMemberModal(true)} className="glass-button-secondary flex items-center gap-2 text-sm">
-              <UserPlus size={16} /> Add Member
-            </button>
-            <button onClick={() => setShowTaskModal(true)} className="glass-button flex items-center gap-2 text-sm">
-              <Plus size={16} /> New Task
-            </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => setShowMemberModal(true)} className="btn btn-secondary btn-sm"><UserPlus size={14} /> Add member</button>
+            <button onClick={() => setShowTaskModal(true)} className="btn btn-primary btn-sm"><Plus size={14} /> New task</button>
           </div>
         )}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Members Panel */}
-        <div className="glass-card p-5 rounded-2xl lg:col-span-1">
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
-            <Users size={18} className="text-cyan-400" /> Members ({project.members?.length || 0})
-          </h2>
-          <div className="space-y-2">
-            {project.members?.map((m) => {
+      <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 24 }} className="detail-grid">
+        {/* Members */}
+        <div className="card" style={{ overflow: "hidden", alignSelf: "flex-start" }}>
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border-primary)", display: "flex", alignItems: "center", gap: 8 }}>
+            <Users size={15} style={{ color: "var(--accent)" }} />
+            <h2 style={{ fontSize: "0.875rem", fontWeight: 600 }}>Members ({project.members?.length || 0})</h2>
+          </div>
+          <div style={{ padding: 4 }}>
+            {project.members?.map((m, i) => {
               const member = m.user || {};
               const memberId = member._id || m.user;
               return (
-                <div key={memberId} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+                <div key={memberId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, transition: "background-color 0.15s" }}
+                  className="member-row"
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                >
+                  <div className="avatar avatar-md" style={{ backgroundColor: colors[i % colors.length] }}>
                     {(member.username || "?").charAt(0).toUpperCase()}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white font-medium truncate">{member.username || member.email || "Unknown"}</p>
-                    <p className="text-xs text-gray-500 truncate">{member.email || ""}</p>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: "0.8125rem", fontWeight: 500 }} className="line-clamp-1">{member.username || "Unknown"}</p>
+                    <p style={{ fontSize: "0.6875rem", color: "var(--text-tertiary)" }} className="line-clamp-1">{member.email || ""}</p>
                   </div>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full flex-shrink-0 ${m.role === "Admin" ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" : "bg-white/10 text-gray-400 border border-white/10"}`}>
-                    {m.role === "Admin" && <Shield size={8} className="inline mr-0.5 -mt-0.5" />}
+                  <span className={`badge ${m.role === "Admin" ? "badge-accent" : "badge-neutral"}`} style={{ fontSize: "0.5625rem" }}>
+                    {m.role === "Admin" && <Shield size={8} style={{ marginRight: 2 }} />}
                     {m.role}
                   </span>
                   {isAdmin && m.role !== "Admin" && (
-                    <button onClick={() => handleRemoveMember(memberId)} className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all" title="Remove member">
+                    <button onClick={() => handleRemoveMember(memberId)} className="icon-btn danger" style={{ width: 28, height: 28, opacity: 0 }}
+                      onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                    >
                       <Trash2 size={12} />
                     </button>
                   )}
@@ -204,25 +199,24 @@ const ProjectDetail = () => {
           </div>
         </div>
 
-        {/* Tasks Panel */}
-        <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-              <ListTodo size={18} className="text-purple-400" /> Tasks ({tasks.length})
+        {/* Tasks */}
+        <div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <h2 style={{ fontSize: "0.9375rem", fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+              <ListTodo size={16} style={{ color: "var(--accent)" }} /> Tasks ({tasks.length})
             </h2>
           </div>
           {tasks.length === 0 ? (
-            <div className="glass-card p-8 rounded-2xl text-center">
-              <ListTodo size={50} className="mx-auto mb-3 text-gray-700" />
-              <p className="text-gray-500 mb-4">No tasks yet for this project</p>
+            <div className="card empty-state">
+              <ListTodo size={40} className="empty-state-icon" style={{ margin: "0 auto 12px" }} />
+              <p className="empty-state-title">No tasks yet</p>
+              <p className="empty-state-text">Create a task to start tracking work.</p>
               {isAdmin && (
-                <button onClick={() => setShowTaskModal(true)} className="glass-button inline-flex items-center gap-2 text-sm">
-                  <Plus size={16} /> Create First Task
-                </button>
+                <button onClick={() => setShowTaskModal(true)} className="btn btn-primary btn-sm"><Plus size={14} /> Create task</button>
               )}
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
               {tasks.map((task) => (
                 <TaskCard key={task._id} task={task} onStatusChange={handleStatusChange} onDelete={handleDeleteTask} isAdmin={isAdmin} />
               ))}
@@ -231,66 +225,69 @@ const ProjectDetail = () => {
         </div>
       </div>
 
-      {/* Create Task Modal */}
-      <Modal isOpen={showTaskModal} onClose={() => setShowTaskModal(false)} title="Create New Task">
-        <form onSubmit={handleCreateTask} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-sm text-gray-300 font-medium">Title</label>
-            <input type="text" value={taskForm.title} onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} placeholder="Task title" className="glass-input" required />
+      {/* Task Modal */}
+      <Modal isOpen={showTaskModal} onClose={() => setShowTaskModal(false)} title="New task">
+        <form onSubmit={handleCreateTask} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="form-group">
+            <label className="form-label">Title</label>
+            <input type="text" value={taskForm.title} onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} placeholder="What needs to be done?" className="form-input" required />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm text-gray-300 font-medium">Description</label>
-            <textarea value={taskForm.description} onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })} placeholder="Task description..." className="glass-input min-h-[80px] resize-none" rows={2} />
+          <div className="form-group">
+            <label className="form-label">Description</label>
+            <textarea value={taskForm.description} onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })} placeholder="Add details…" className="form-textarea" rows={2} />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm text-gray-300 font-medium">Assign To</label>
-            <select value={taskForm.assignedTo} onChange={(e) => setTaskForm({ ...taskForm, assignedTo: e.target.value })} className="glass-input cursor-pointer">
-              <option value="" className="bg-gray-900">Unassigned</option>
+          <div className="form-group">
+            <label className="form-label">Assign to</label>
+            <select value={taskForm.assignedTo} onChange={(e) => setTaskForm({ ...taskForm, assignedTo: e.target.value })} className="form-select">
+              <option value="">Unassigned</option>
               {project.members?.map((m) => {
                 const member = m.user || {};
-                return (
-                  <option key={member._id || m.user} value={member._id || m.user} className="bg-gray-900">
-                    {member.username || member.email || "Unknown"} ({m.role})
-                  </option>
-                );
+                return <option key={member._id || m.user} value={member._id || m.user}>{member.username || member.email || "Unknown"} ({m.role})</option>;
               })}
             </select>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm text-gray-300 font-medium">Due Date</label>
-            <input type="date" value={taskForm.dueDate} onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })} className="glass-input cursor-pointer" />
+          <div className="form-group">
+            <label className="form-label">Due date</label>
+            <input type="date" value={taskForm.dueDate} onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })} className="form-input" />
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => setShowTaskModal(false)} className="glass-button-secondary flex-1">Cancel</button>
-            <button type="submit" disabled={creating} className="glass-button flex-1 flex items-center justify-center gap-2">
-              {creating ? <span className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full" /> : <><Plus size={16} /> Create</>}
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button type="button" onClick={() => setShowTaskModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
+            <button type="submit" disabled={creating} className="btn btn-primary" style={{ flex: 1 }}>
+              {creating ? <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> : "Create task"}
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* Add Member Modal */}
-      <Modal isOpen={showMemberModal} onClose={() => setShowMemberModal(false)} title="Add Team Member">
-        <form onSubmit={handleAddMember} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-sm text-gray-300 font-medium">Email</label>
-            <input type="email" value={memberForm.email} onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })} placeholder="member@example.com" className="glass-input" required />
+      {/* Member Modal */}
+      <Modal isOpen={showMemberModal} onClose={() => setShowMemberModal(false)} title="Add member">
+        <form onSubmit={handleAddMember} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="form-group">
+            <label className="form-label">Email address</label>
+            <input type="email" value={memberForm.email} onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })} placeholder="teammate@company.com" className="form-input" required />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm text-gray-300 font-medium">Role</label>
-            <select value={memberForm.role} onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })} className="glass-input cursor-pointer">
-              <option value="Member" className="bg-gray-900">Member</option>
-              <option value="Admin" className="bg-gray-900">Admin</option>
+          <div className="form-group">
+            <label className="form-label">Role</label>
+            <select value={memberForm.role} onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })} className="form-select">
+              <option value="Member">Member</option>
+              <option value="Admin">Admin</option>
             </select>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => setShowMemberModal(false)} className="glass-button-secondary flex-1">Cancel</button>
-            <button type="submit" disabled={creating} className="glass-button flex-1 flex items-center justify-center gap-2">
-              {creating ? <span className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full" /> : <><UserPlus size={16} /> Add</>}
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button type="button" onClick={() => setShowMemberModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
+            <button type="submit" disabled={creating} className="btn btn-primary" style={{ flex: 1 }}>
+              {creating ? <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> : "Add member"}
             </button>
           </div>
         </form>
       </Modal>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .detail-grid { grid-template-columns: 1fr !important; }
+        }
+        .member-row:hover .icon-btn { opacity: 1 !important; }
+      `}</style>
     </div>
   );
 };

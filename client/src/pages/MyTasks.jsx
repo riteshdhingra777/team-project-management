@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { taskAPI } from "../api/api";
 import TaskCard from "../components/TaskCard";
 import { toast } from "react-toastify";
-import { ListTodo, Filter, Sparkles } from "lucide-react";
+import { ListTodo } from "lucide-react";
+
+const statusOptions = ["All", "Pending", "In Progress", "Completed", "Overdue"];
 
 const MyTasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -15,7 +17,7 @@ const MyTasks = () => {
         const data = await taskAPI.getMyTasks();
         setTasks(data.tasks || []);
       } catch {
-        toast.error("Failed to load tasks");
+        toast.error("Could not load tasks");
       } finally {
         setLoading(false);
       }
@@ -26,21 +28,16 @@ const MyTasks = () => {
   const handleStatusChange = async (taskId, status) => {
     try {
       await taskAPI.updateStatus(taskId, status);
-      setTasks((prev) =>
-        prev.map((t) => (t._id === taskId ? { ...t, status } : t))
-      );
-      toast.success("Status updated!");
+      setTasks((prev) => prev.map((t) => (t._id === taskId ? { ...t, status } : t)));
+      toast.success("Task updated");
     } catch (err) {
-      toast.error(err.message || "Failed to update");
+      toast.error(err.message || "Could not update task");
     }
   };
 
-  const statuses = ["All", "Pending", "In Progress", "Completed", "Overdue"];
+  const filtered = filter === "All" ? tasks : tasks.filter((t) => t.status === filter);
 
-  const filtered =
-    filter === "All" ? tasks : tasks.filter((t) => t.status === filter);
-
-  const statusCounts = {
+  const counts = {
     All: tasks.length,
     Pending: tasks.filter((t) => t.status === "Pending").length,
     "In Progress": tasks.filter((t) => t.status === "In Progress").length,
@@ -48,69 +45,45 @@ const MyTasks = () => {
     Overdue: tasks.filter((t) => t.status === "Overdue").length,
   };
 
-  if (loading) {
-    return (
-      <div className="loading-screen">
-        <span className="animate-spin w-10 h-10 border-3 border-purple-500/30 border-t-purple-500 rounded-full" />
-      </div>
-    );
-  }
+  if (loading) return <div className="loading-screen"><span className="spinner" /></div>;
 
   return (
     <div className="page-container fade-in">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles size={20} className="text-cyan-400" />
-          <span className="text-sm text-cyan-400 font-medium">My Tasks</span>
-        </div>
-        <h1 className="text-3xl font-bold text-white">Tasks Assigned to You</h1>
-        <p className="text-gray-400 mt-1">
-          Track and manage all your assigned work
-        </p>
+      <div style={{ marginBottom: 24 }}>
+        <p className="section-label">Tasks</p>
+        <h1 className="page-title">My tasks</h1>
+        <p className="page-subtitle">Track and manage work assigned to you</p>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <Filter size={16} className="text-gray-500 self-center mr-1" />
-        {statuses.map((s) => (
+      {/* Filter tabs */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 24 }}>
+        {statusOptions.map((s) => (
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
-              filter === s
-                ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
-                : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
-            }`}
+            className={`btn btn-sm ${filter === s ? "btn-primary" : "btn-ghost"}`}
+            style={{ borderRadius: 20, fontSize: "0.8125rem" }}
           >
-            {s}{" "}
-            <span className="text-xs opacity-60">({statusCounts[s]})</span>
+            {s}
+            <span style={{ opacity: 0.6, fontSize: "0.6875rem", marginLeft: 4 }}>
+              {counts[s]}
+            </span>
           </button>
         ))}
       </div>
 
-      {/* Tasks */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <ListTodo size={60} className="mx-auto mb-4 text-gray-700" />
-          <h2 className="text-xl font-semibold text-gray-400 mb-2">
-            {filter === "All"
-              ? "No tasks assigned yet"
-              : `No ${filter.toLowerCase()} tasks`}
-          </h2>
-          <p className="text-gray-500">
-            Tasks assigned to you will appear here
+        <div className="empty-state">
+          <ListTodo size={48} className="empty-state-icon" style={{ margin: "0 auto 12px" }} />
+          <p className="empty-state-title">
+            {filter === "All" ? "No tasks assigned" : `No ${filter.toLowerCase()} tasks`}
           </p>
+          <p className="empty-state-text">Tasks assigned to you will show up here.</p>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
           {filtered.map((task) => (
-            <TaskCard
-              key={task._id}
-              task={task}
-              onStatusChange={handleStatusChange}
-              showProject
-            />
+            <TaskCard key={task._id} task={task} onStatusChange={handleStatusChange} showProject />
           ))}
         </div>
       )}

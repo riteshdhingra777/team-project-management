@@ -23,18 +23,14 @@ const Modal = ({ isOpen, onClose, title, children }) => {
       className="modal-overlay"
       onClick={(e) => e.target === overlayRef.current && onClose()}
     >
-      <div className="modal-container glass-card p-6 w-full max-w-lg mx-4">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">{title}</h2>
-          <button
-            id="modal-close-btn"
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-white/10 transition-colors"
-          >
-            <X size={20} className="text-gray-400" />
+      <div className="modal-container w-full max-w-lg mx-4">
+        <div className="modal-header">
+          <h2 className="modal-title">{title}</h2>
+          <button onClick={onClose} className="icon-btn" aria-label="Close">
+            <X size={18} />
           </button>
         </div>
-        {children}
+        <div className="modal-body">{children}</div>
       </div>
     </div>
   );

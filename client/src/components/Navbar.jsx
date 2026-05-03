@@ -1,10 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, FolderKanban, ListTodo, LogOut, Menu, X, Zap } from "lucide-react";
+import { LayoutDashboard, FolderKanban, ListTodo, LogOut, Menu, X, Zap, Sun, Moon } from "lucide-react";
 import { useAuth } from "../store/auth";
+import { useTheme } from "../store/theme";
 import { useState } from "react";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -17,17 +19,15 @@ const Navbar = () => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className="navbar glass" id="main-navbar">
+    <nav className="navbar" id="main-navbar">
       <div className="navbar-inner">
-        {/* Logo */}
         <Link to="/dashboard" className="navbar-logo" id="logo-link">
           <div className="logo-icon">
-            <Zap size={20} />
+            <Zap size={17} />
           </div>
           <span className="logo-text">TeamTask</span>
         </Link>
 
-        {/* Desktop Links */}
         <div className="navbar-links">
           {links.map((link) => (
             <Link
@@ -36,14 +36,22 @@ const Navbar = () => {
               id={`nav-${link.label.toLowerCase().replace(" ", "-")}`}
               className={`navbar-link ${isActive(link.to) ? "active" : ""}`}
             >
-              <link.icon size={18} />
+              <link.icon size={16} />
               <span>{link.label}</span>
             </Link>
           ))}
         </div>
 
-        {/* Right Section */}
         <div className="navbar-right">
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+
           {user && (
             <div className="navbar-user">
               <div className="user-avatar">
@@ -52,28 +60,29 @@ const Navbar = () => {
               <span className="user-name">{user.username}</span>
             </div>
           )}
+
           <button
             id="logout-btn"
             onClick={logout}
-            className="navbar-logout"
-            title="Logout"
+            className="icon-btn danger"
+            title="Sign out"
+            aria-label="Sign out"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
           </button>
 
-          {/* Mobile hamburger */}
           <button
             className="navbar-mobile-toggle"
             onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
           >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="navbar-mobile-menu glass">
+        <div className="navbar-mobile-menu">
           {links.map((link) => (
             <Link
               key={link.to}
@@ -81,7 +90,7 @@ const Navbar = () => {
               className={`navbar-mobile-link ${isActive(link.to) ? "active" : ""}`}
               onClick={() => setMobileOpen(false)}
             >
-              <link.icon size={18} />
+              <link.icon size={16} />
               <span>{link.label}</span>
             </Link>
           ))}
