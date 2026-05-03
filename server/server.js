@@ -1,3 +1,7 @@
+// Polyfill for SlowBuffer to fix jsonwebtoken dependency issue in Node.js 22/25+
+const buffer = require('buffer');
+if (!buffer.SlowBuffer) { buffer.SlowBuffer = buffer.Buffer; }
+
 require("dotenv").config();  
 const express=require("express");
 const cors=require("cors");
