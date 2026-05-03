@@ -35,8 +35,8 @@ The project is divided into a robust REST API backend and a responsive, modern f
 Fork and clone the repo
 
 ```bash
-git clone
-cd TeamTask
+git clone git@github.com:riteshdhingra777/team-project-management.git
+cd team-project-management
 ```
 
 ## Install dependencies
